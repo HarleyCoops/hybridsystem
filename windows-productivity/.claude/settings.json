@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Glob",
+      "Grep"
+    ],
+    "deny": []
+  },
+  "env": {
+    "WATCHTOWER_MODE": "development"
+  }
+}

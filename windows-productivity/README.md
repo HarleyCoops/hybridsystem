@@ -1,6 +1,6 @@
 # Watchtower Windows
 
-A Windows productivity system powered by the Claude Agent SDK — reimagining the hybrid physical-digital workflow for Windows users.
+A Windows productivity system powered by the Claude Code SDK — reimagining the hybrid physical-digital workflow for Windows users.
 
 ## Overview
 
@@ -16,17 +16,17 @@ Watchtower Windows bridges the focus benefits of physical pen-and-paper work wit
 
 ## Architecture
 
-Built on the Claude Agent SDK, this system provides:
+Built on the Claude Code SDK for Python:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  CLI Layer (watchtower command)                         │
+│  CLI Layer (Click)                                      │
 ├─────────────────────────────────────────────────────────┤
-│  Agent Orchestration (Claude SDK integration)           │
+│  Agent Orchestration (Claude Code SDK)                  │
 ├─────────────────────────────────────────────────────────┤
 │  Productivity Tools (task, energy, sprint tracking)     │
 ├─────────────────────────────────────────────────────────┤
-│  State Management (JSON-based persistence)              │
+│  State Management (Pydantic + JSON persistence)         │
 ├─────────────────────────────────────────────────────────┤
 │  Windows Integrations (notifications, scheduler)        │
 └─────────────────────────────────────────────────────────┘
@@ -36,14 +36,14 @@ Built on the Claude Agent SDK, this system provides:
 
 ### Prerequisites
 
-- Node.js 20 or later
-- Claude Code CLI installed and configured
+- Python 3.10 or later
+- Claude Code SDK installed and configured
 - Windows 10/11 (or macOS/Linux for cross-platform use)
 
-### Install from npm
+### Install from PyPI
 
 ```bash
-npm install -g watchtower-windows
+pip install watchtower-windows
 ```
 
 ### Install from source
@@ -51,9 +51,7 @@ npm install -g watchtower-windows
 ```bash
 git clone https://github.com/your-repo/watchtower-windows
 cd watchtower-windows
-npm install
-npm run build
-npm link
+pip install -e .
 ```
 
 ## Quick Start
@@ -101,15 +99,15 @@ watchtower card ~/Pictures/card-today.jpg
 
 ### Core Commands
 
-| Command | Alias | Description |
-|---------|-------|-------------|
-| `watchtower brief` | `b` | Generate morning briefing |
-| `watchtower card <image>` | `c` | Process photographed index card |
-| `watchtower energy [level]` | `e` | Log/analyze energy level |
-| `watchtower status` | `s` | Quick status overview |
-| `watchtower add <task>` | `a` | Add a new task |
-| `watchtower journal [text]` | `j` | Process journal entry |
-| `watchtower accountability` | `acc` | Deep pattern analysis |
+| Command | Description |
+|---------|-------------|
+| `watchtower brief` | Generate morning briefing |
+| `watchtower card <image>` | Process photographed index card |
+| `watchtower energy [level]` | Log/analyze energy level |
+| `watchtower status` | Quick status overview |
+| `watchtower add <task>` | Add a new task |
+| `watchtower journal [text]` | Process journal entry |
+| `watchtower accountability` | Deep pattern analysis |
 
 ### Task Priority Levels
 
@@ -161,106 +159,39 @@ watchtower config --enable-weekly      # Weekly reviews
 watchtower config --enable-deepwork    # Deep work sessions
 ```
 
-### Configuration Options
-
-The config file supports:
-
-```json
-{
-  "documents": {
-    "daily": "The Watchtower",
-    "tasks": "The Forge",
-    "journey": "The Long Road"
-  },
-  "energyWindows": [
-    { "start": 9, "end": 13, "label": "Morning Focus" },
-    { "start": 15, "end": 18, "label": "Afternoon Drive" }
-  ],
-  "sprint": {
-    "warningDay": 14,
-    "dangerDay": 21
-  },
-  "voices": {
-    "discipline": "Marcus Aurelius",
-    "wisdom": "Gandalf",
-    "leadership": "Aragorn"
-  }
-}
-```
-
-## Pattern Detection
-
-### Avoidance Patterns
-
-Tasks rolled forward 3+ times trigger avoidance alerts. The system tracks:
-- Which tasks you're avoiding
-- How long they've been avoided
-- Category patterns (avoiding deep work?)
-
-### Sprint Health
-
-Consecutive work days are tracked to prevent burnout:
-- **Day 1-13**: Healthy sprint
-- **Day 14+**: Warning zone
-- **Day 21+**: Danger zone - rest recommended
-
-Use `watchtower rest` to record a rest day and reset the counter.
-
-### Energy Trends
-
-The system correlates your energy readings with:
-- Time of day patterns
-- Completion rates
-- Task category success
-
-## Windows Integration
-
-### Toast Notifications
-
-Get notified of important events:
-
-```typescript
-import { sendNotification } from 'watchtower-windows';
-
-await sendNotification('Sprint Warning', 'Day 14 - consider a rest day');
-```
-
-### Task Scheduler
-
-Automate your morning briefing:
-
-```typescript
-import { createScheduledTask } from 'watchtower-windows';
-
-await createScheduledTask('WatchtowerBrief', 'watchtower brief', {
-  time: '08:00',
-  days: ['MON', 'TUE', 'WED', 'THU', 'FRI']
-});
-```
-
-## API Usage
+## Python API Usage
 
 Use Watchtower as a library in your own applications:
 
-```typescript
-import {
-  runMorningBriefing,
-  processCard,
-  toolAddTask,
-  toolLogEnergy,
-  analyzePatterns
-} from 'watchtower-windows';
+```python
+import asyncio
+from watchtower import (
+    run_morning_briefing,
+    process_card,
+    add_task,
+    log_energy,
+    analyze_patterns,
+    get_config,
+)
+from watchtower.types import TaskPriority, EnergyLevel
 
-// Run briefing
-const briefing = await runMorningBriefing();
-console.log(briefing.text);
+async def main():
+    # Run briefing
+    briefing = await run_morning_briefing()
+    print(briefing.text)
 
-// Add task programmatically
-const result = toolAddTask('Review PR #123', 'standard');
+    # Add task programmatically
+    task = add_task("Review PR #123", TaskPriority.STANDARD)
+    print(f"Added: {task.id}")
 
-// Get pattern analysis
-const patterns = analyzePatterns();
-console.log(patterns.avoidancePatterns);
+    # Log energy
+    log_energy(EnergyLevel.HIGH, "Morning coffee")
+
+    # Get pattern analysis
+    patterns = analyze_patterns()
+    print(f"Avoidance patterns: {len(patterns.avoidance_patterns)}")
+
+asyncio.run(main())
 ```
 
 ## Data Storage
@@ -269,6 +200,7 @@ All data is stored locally:
 
 ```
 ~/.watchtower/
+├── config.json         # Configuration
 ├── tasks.json          # Task database
 ├── daily.json          # Daily entries
 ├── sprint.json         # Sprint tracking
@@ -278,7 +210,7 @@ All data is stored locally:
 
 On Windows, this is typically:
 ```
-%APPDATA%\watchtower\
+%APPDATA%\.watchtower\
 ```
 
 ## Philosophy
@@ -290,9 +222,33 @@ This system is built on several core principles:
 3. **Sustainable pace matters**: Built-in burnout detection protects your wellbeing
 4. **Compassionate accountability**: Coaching voices meet you where you are
 
-## Contributing
+## Development
 
-Contributions welcome! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
+### Setup Development Environment
+
+```bash
+git clone https://github.com/your-repo/watchtower-windows
+cd watchtower-windows
+pip install -e ".[dev]"
+```
+
+### Run Tests
+
+```bash
+pytest
+```
+
+### Type Checking
+
+```bash
+mypy src/watchtower
+```
+
+### Linting
+
+```bash
+ruff check src/watchtower
+```
 
 ## License
 
@@ -301,5 +257,5 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Acknowledgments
 
 - Original Mac version: Hybrid Productivity System
-- Powered by: Claude Agent SDK by Anthropic
+- Powered by: Claude Code SDK by Anthropic
 - Inspired by: Cal Newport's deep work principles, GTD methodology, Stoic philosophy

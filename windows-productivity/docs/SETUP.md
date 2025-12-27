@@ -6,14 +6,13 @@ Complete setup instructions for the Windows productivity system.
 
 ### Required
 
-1. **Node.js 20+**
-   - Download from https://nodejs.org/
-   - Verify: `node --version`
+1. **Python 3.10+**
+   - Download from https://www.python.org/downloads/
+   - Verify: `python --version`
 
-2. **Claude Code CLI**
-   - Install: `npm install -g @anthropic-ai/claude-code`
-   - Configure: `claude login`
-   - Verify: `claude --version`
+2. **Claude Code SDK**
+   - Install: `pip install claude-code-sdk`
+   - Verify: `python -c "import claude_code_sdk; print('OK')"`
 
 3. **Anthropic API Key**
    - Get from https://console.anthropic.com/
@@ -25,15 +24,12 @@ Complete setup instructions for the Windows productivity system.
    - Install Craft MCP server for Claude Code
    - Configure in Claude Code settings
 
-5. **PowerShell 7+** (for enhanced Windows features)
-   - Download from https://github.com/PowerShell/PowerShell
-
 ## Installation
 
-### Option 1: npm Global Install
+### Option 1: pip Install
 
 ```powershell
-npm install -g watchtower-windows
+pip install watchtower-windows
 ```
 
 ### Option 2: From Source
@@ -43,14 +39,8 @@ npm install -g watchtower-windows
 git clone https://github.com/your-repo/watchtower-windows
 cd watchtower-windows
 
-# Install dependencies
-npm install
-
-# Build TypeScript
-npm run build
-
-# Link globally
-npm link
+# Install in development mode
+pip install -e .
 ```
 
 ### Verify Installation
@@ -65,8 +55,8 @@ watchtower help-full
 ### 1. First Run
 
 The first time you run any command, Watchtower creates:
-- Configuration file at `%APPDATA%\watchtower\config.json`
-- Data directory at `%APPDATA%\watchtower\`
+- Configuration file at `%APPDATA%\.watchtower\config.json`
+- Data directory at `%APPDATA%\.watchtower\`
 
 ```powershell
 # Run a simple command to initialize
@@ -89,7 +79,7 @@ watchtower config --show
 
 Edit the config file directly to change document names:
 ```powershell
-notepad "%APPDATA%\watchtower\Config\watchtower\config.json"
+notepad "%APPDATA%\.watchtower\config.json"
 ```
 
 ### 3. Set Your Timezone
@@ -98,21 +88,7 @@ notepad "%APPDATA%\watchtower\Config\watchtower\config.json"
 watchtower config --set-timezone "America/New_York"
 ```
 
-### 4. Configure Energy Windows
-
-Edit the config to set your peak productivity hours:
-
-```json
-{
-  "energyWindows": [
-    { "start": 9, "end": 12, "label": "Morning Deep Work" },
-    { "start": 14, "end": 17, "label": "Afternoon Focus" },
-    { "start": 20, "end": 22, "label": "Evening Flow" }
-  ]
-}
-```
-
-### 5. Enable Optional Modules
+### 4. Enable Optional Modules
 
 ```powershell
 # Enable weekly reviews
@@ -125,25 +101,20 @@ watchtower config --enable-deepwork
 watchtower config --enable-health
 ```
 
-## Craft MCP Integration (Optional)
+## Environment Variables
 
-If you use Craft for notes:
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `ANTHROPIC_API_KEY` | Your Anthropic API key | Yes |
+| `WATCHTOWER_DATA_DIR` | Override data directory | No |
+| `WATCHTOWER_DEBUG` | Enable debug logging | No |
 
-### 1. Install Craft MCP Server
-
+Set in PowerShell:
 ```powershell
-# In Claude Code settings, add the Craft MCP server
-claude mcp install craft
+$env:ANTHROPIC_API_KEY = "sk-ant-..."
 ```
 
-### 2. Configure Document Links
-
-The system uses these three documents:
-- **The Watchtower**: Daily hub for briefings and field reports
-- **The Forge**: Task pool with energy-categorized buckets
-- **The Long Road**: Journey tracker for patterns and reflections
-
-Create these documents in Craft, then the system will read/write to them automatically.
+Or permanently in System Properties > Environment Variables.
 
 ## Windows Task Scheduler (Optional)
 
@@ -168,29 +139,13 @@ Register-ScheduledTask -TaskName "WatchtowerBrief" -Action $action -Trigger $tri
 6. Program: `watchtower`
 7. Arguments: `brief`
 
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key | Yes |
-| `WATCHTOWER_DATA_DIR` | Override data directory | No |
-| `WATCHTOWER_DEBUG` | Enable debug logging | No |
-
-Set in PowerShell:
-```powershell
-$env:ANTHROPIC_API_KEY = "sk-ant-..."
-```
-
-Or permanently in System Properties > Environment Variables.
-
 ## Troubleshooting
 
-### "Claude Code not found"
+### "Claude Code SDK not found"
 
-Ensure Claude Code is installed and in PATH:
+Ensure the SDK is installed:
 ```powershell
-npm install -g @anthropic-ai/claude-code
-claude --version
+pip install claude-code-sdk
 ```
 
 ### "Permission denied"
@@ -218,33 +173,27 @@ For card processing, ensure:
 
 Check file permissions:
 ```powershell
-icacls "%APPDATA%\watchtower"
+icacls "%APPDATA%\.watchtower"
 ```
 
 ## Upgrading
 
 ```powershell
-# npm installed
-npm update -g watchtower-windows
-
-# From source
-git pull
-npm install
-npm run build
+pip install --upgrade watchtower-windows
 ```
 
 ## Uninstalling
 
 ```powershell
-# Remove global package
-npm uninstall -g watchtower-windows
+# Remove package
+pip uninstall watchtower-windows
 
 # Remove data (optional)
-Remove-Item -Recurse "%APPDATA%\watchtower"
+Remove-Item -Recurse "%APPDATA%\.watchtower"
 ```
 
 ## Next Steps
 
-1. Read the [Customization Guide](CUSTOMIZATION.md) for advanced configuration
+1. Read the [README](../README.md) for usage examples
 2. Run `watchtower help-full` for command reference
 3. Start with `watchtower brief` tomorrow morning!

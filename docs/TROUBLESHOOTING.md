@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Common issues and solutions.
+Common issues and solutions for Windows.
 
 ---
 
@@ -8,35 +8,34 @@ Common issues and solutions.
 
 ### "watchtower: command not found"
 
-The main command wasn't installed properly.
+The command wasn't added to PATH properly.
 
 **Fix:**
-```bash
-# Check if it exists
-ls -la /usr/local/bin/watchtower
+```powershell
+# Try running via Python module
+python -m watchtower --help
 
-# If it's a directory (common issue from old installs)
-sudo rm -rf /usr/local/bin/watchtower
+# If that works, reinstall the package
+pip install -e .
 
-# Reinstall
-cd hybridsystem
-./install.sh
+# Verify Python Scripts is in PATH
+echo %PATH%
 ```
 
-### "Permission denied" when running install.sh
+If the Scripts folder isn't in PATH, add it:
+```powershell
+# Usually located at:
+# C:\Users\YourName\AppData\Local\Programs\Python\Python3xx\Scripts
+```
+
+### "pip: command not found"
+
+Python may not be properly installed or in PATH.
 
 **Fix:**
-```bash
-chmod +x install.sh
-./install.sh
-```
-
-### Scripts not executable
-
-**Fix:**
-```bash
-sudo chmod +x /usr/local/bin/watchtower-scripts/*.sh
-```
+1. Reinstall Python from [python.org](https://www.python.org/downloads/)
+2. During installation, check "Add Python to PATH"
+3. Restart your terminal
 
 ---
 
@@ -52,95 +51,55 @@ Install Claude Code first:
 ### Claude Code hangs or times out
 
 **Try:**
-```bash
-# Kill and restart
-pkill -f claude
+```powershell
+# Kill any running Claude processes
+taskkill /f /im claude.exe
+
+# Restart Claude Code
 claude
 ```
 
-Or restart your terminal completely.
+Or restart your terminal/PowerShell completely.
 
 ### "Context too long" errors
 
 Clear context between operations:
-```bash
+```powershell
 # In Claude Code
 /clear
 ```
 
 Or start a fresh session:
-```bash
-# Quit and reopen
+```powershell
 exit
 claude
 ```
 
 ---
 
-## Craft MCP Issues
+## Configuration Issues
 
-### "Craft MCP not detected"
-
-The system works without Craft MCP, but you'll need to manually update documents.
-
-**To fix:**
-1. Follow [Craft's MCP guide](https://www.craft.do/imagine/guide/mcp/claude_code)
-2. Verify connection: `claude mcp list`
-3. Restart Claude Code after configuration
-
-### Can't read/write Craft documents
+### Config not loading
 
 **Check:**
-1. Document is shared properly in Craft
-2. MCP server is running
-3. Document names in config match actual names
+```powershell
+# View config location
+watchtower config --path
 
-**Test:**
-```bash
-claude
-# Then type:
-Read my Watchtower document
+# View current config
+watchtower config --show
+
+# If missing or corrupt, delete and regenerate
+del %APPDATA%\.watchtower\config.json
+watchtower config --show
 ```
 
-### Changes not appearing in Craft
+### Changes to config not taking effect
 
-Craft may take a moment to sync. Also verify:
-- You're looking at the right document
-- The MCP is connected
-- No errors in Claude Code output
-
----
-
-## Time/Timezone Issues
-
-### Wrong time in briefings
-
-**Fix:**
-```bash
-# Check current timezone
-date
-
-# Set timezone in config
-nano ~/.watchtower/config
-# Change: TIMEZONE="America/Your_City"
-
-# Also add to shell config
-echo 'export TZ="America/Your_City"' >> ~/.zshrc
-source ~/.zshrc
-```
-
-### Energy windows not working correctly
-
-Verify your config uses 24-hour format:
-```bash
-# Correct
-PEAK_WINDOW_1_START=9
-PEAK_WINDOW_1_END=13
-
-# Wrong
-PEAK_WINDOW_1_START=9am
-PEAK_WINDOW_1_END=1pm
-```
+Config is loaded fresh each command. If still not working:
+- Ensure valid JSON syntax
+- Check for typos in key names
+- Try regenerating the config file
 
 ---
 
@@ -149,13 +108,13 @@ PEAK_WINDOW_1_END=1pm
 ### "Image not found"
 
 Use full path to the image:
-```bash
+```powershell
 # Wrong
 watchtower card card.jpg
 
 # Right
-watchtower card ~/Downloads/card.jpg
-watchtower card /Users/yourname/Downloads/IMG_1234.jpeg
+watchtower card C:\Users\YourName\Pictures\card.jpg
+watchtower card %USERPROFILE%\Downloads\IMG_1234.jpeg
 ```
 
 ### Poor handwriting recognition
@@ -170,54 +129,67 @@ Tips for better OCR:
 ### Card not processing
 
 Check file format is supported:
-```bash
-# Supported
+```powershell
+# Supported formats
 .jpg .jpeg .png .heic .webp
-
-# Check your file
-file ~/Downloads/your-image.jpg
 ```
 
 ---
 
-## Config Issues
+## Windows Task Scheduler Issues
 
-### Config not loading
+### Scheduled briefings not running
 
-**Check:**
-```bash
-# Verify config exists
-cat ~/.watchtower/config
+**Check Task Scheduler:**
+1. Open Task Scheduler (search in Start menu)
+2. Look for "Watchtower Morning Briefing"
+3. Check the History tab for errors
 
-# If empty or missing, copy defaults
-cp hybridsystem/config/defaults.conf ~/.watchtower/config
+**Common fixes:**
+```powershell
+# Remove and recreate the task
+watchtower schedule --disable
+watchtower schedule --enable 08:00
 ```
 
-### Changes to config not taking effect
+### Task runs but nothing happens
 
-Config is loaded fresh each command. If still not working:
-```bash
-# Check for syntax errors
-bash -n ~/.watchtower/config
+The task might not find the `watchtower` command. Ensure:
+1. Watchtower is installed properly: `pip install -e .`
+2. The watchtower.exe is in a PATH accessible to Task Scheduler
 
-# Should return nothing if valid
+---
+
+## Context Menu Issues
+
+### Right-click options not appearing
+
+```powershell
+# Reinstall context menus
+watchtower uninstall-menus
+watchtower install-menus
+```
+
+If still not working, try logging out and back in to refresh Explorer.
+
+### Context menu error when clicking
+
+The watchtower command path may have changed. Reinstall:
+```powershell
+watchtower uninstall-menus
+pip install -e .
+watchtower install-menus
 ```
 
 ---
 
 ## Health Module Issues
 
-### "Health module not installed"
+### "Health module not enabled"
 
 **Fix:**
-```bash
-# Edit config
-nano ~/.watchtower/config
-# Set: HEALTH_MODULE_ENABLED=true
-
-# Reinstall
-cd hybridsystem
-./install.sh
+```powershell
+watchtower config --enable-health
 ```
 
 ### PDF not processing
@@ -225,30 +197,48 @@ cd hybridsystem
 Some PDFs are image-based or have complex layouts. Try:
 - Screenshot the relevant page instead
 - Use a simpler PDF export if available
+- Ensure the PDF isn't password-protected
 
 ---
 
-## General Issues
+## Performance Issues
 
-### Scripts work in terminal but not in Claude Code
+### Commands running slowly
 
-Claude Code may have different PATH. Use full paths:
-```bash
-/usr/local/bin/watchtower-scripts/morning-briefing.sh
-```
+- Claude Code API calls take a few seconds; this is normal
+- For status checks, the first call may be slower as models load
 
-### "No such file or directory"
+### High memory usage
 
-Check the path exists:
-```bash
-ls -la /path/you/specified
-```
-
-### Performance is slow
-
+- Restart your terminal session
 - Clear Claude Code context: `/clear`
-- Restart Claude Code
-- Check if Craft documents are very large (trim old entries)
+
+---
+
+## Data Issues
+
+### Lost tasks or data
+
+Data is stored in:
+```
+%APPDATA%\.watchtower\
+```
+
+**Backup regularly:**
+```powershell
+copy %APPDATA%\.watchtower\*.json %USERPROFILE%\Documents\watchtower-backup\
+```
+
+### Corrupt data files
+
+If a JSON file is corrupt:
+```powershell
+# View the file
+type %APPDATA%\.watchtower\tasks.json
+
+# If corrupt, you may need to delete and start fresh
+del %APPDATA%\.watchtower\tasks.json
+```
 
 ---
 
@@ -260,6 +250,7 @@ If none of these solve your issue:
 2. Open a new issue with:
    - What you tried
    - Error messages (exact text)
-   - Your macOS version
-   - Output of `watchtower status`
+   - Your Windows version
+   - Python version: `python --version`
+   - Output of `watchtower config --show`
 3. Reach out: [@krispuckett](https://twitter.com/krispuckett)

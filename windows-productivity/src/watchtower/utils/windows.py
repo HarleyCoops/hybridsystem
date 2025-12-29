@@ -1,27 +1,17 @@
 """
 Watchtower Windows - Windows-Specific Utilities
-Platform-specific integrations for Windows.
+Windows integrations for the productivity system.
 """
 
 import os
 import subprocess
-import sys
 from pathlib import Path
 from typing import Optional
 
 
-def is_windows() -> bool:
-    """Check if running on Windows."""
-    return sys.platform == "win32" or os.name == "nt"
-
-
 def get_data_directory() -> Path:
-    """Get the appropriate data directory for the platform."""
-    if is_windows():
-        base = Path(os.environ.get("APPDATA", Path.home()))
-    else:
-        base = Path.home()
-
+    """Get the Windows data directory (%APPDATA%\.watchtower)."""
+    base = Path(os.environ.get("APPDATA", Path.home()))
     return base / ".watchtower"
 
 
@@ -35,9 +25,6 @@ async def send_notification(
     Send a Windows toast notification.
     Uses PowerShell's BurntToast module if available, falls back to basic notification.
     """
-    if not is_windows():
-        print(f"[Notification] {title}: {message}")
-        return True
 
     # Try BurntToast first (richer notifications)
     burnt_toast_command = f"""
@@ -112,10 +99,6 @@ async def create_scheduled_task(
         time: Time in HH:MM format
         days: Days of week (MON, TUE, WED, THU, FRI, SAT, SUN)
     """
-    if not is_windows():
-        print("Scheduled tasks only supported on Windows")
-        return False
-
     days_of_week = ",".join(days) if days else "MON,TUE,WED,THU,FRI,SAT,SUN"
 
     create_task_command = f'''
@@ -139,9 +122,6 @@ async def create_scheduled_task(
 
 async def remove_scheduled_task(name: str) -> bool:
     """Remove a Windows Task Scheduler task."""
-    if not is_windows():
-        return False
-
     try:
         result = subprocess.run(
             [
@@ -160,39 +140,29 @@ async def remove_scheduled_task(name: str) -> bool:
 
 async def open_with_default_app(file_path: str) -> None:
     """Open a file with the default Windows application."""
-    if is_windows():
-        os.startfile(file_path)  # type: ignore
-    elif sys.platform == "darwin":
-        subprocess.run(["open", file_path])
-    else:
-        subprocess.run(["xdg-open", file_path])
+    os.startfile(file_path)  # type: ignore
 
 
 async def get_system_uptime() -> float:
     """Get system uptime in seconds to help detect fresh starts vs. sleep resume."""
-    if is_windows():
-        try:
-            result = subprocess.run(
-                [
-                    "powershell",
-                    "-NoProfile",
-                    "-Command",
-                    "(Get-Date) - (gcim Win32_OperatingSystem).LastBootUpTime | Select-Object -ExpandProperty TotalSeconds",
-                ],
-                capture_output=True,
-                text=True,
-            )
-            return float(result.stdout.strip())
-        except Exception:
-            return 0.0
-    return 0.0
+    try:
+        result = subprocess.run(
+            [
+                "powershell",
+                "-NoProfile",
+                "-Command",
+                "(Get-Date) - (gcim Win32_OperatingSystem).LastBootUpTime | Select-Object -ExpandProperty TotalSeconds",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        return float(result.stdout.strip())
+    except Exception:
+        return 0.0
 
 
 async def is_on_battery() -> bool:
     """Check if the system is on battery power."""
-    if not is_windows():
-        return False
-
     try:
         result = subprocess.run(
             [
@@ -212,9 +182,6 @@ async def is_on_battery() -> bool:
 
 async def get_windows_theme() -> str:
     """Get the current Windows theme (light/dark)."""
-    if not is_windows():
-        return "light"
-
     try:
         result = subprocess.run(
             [
@@ -233,10 +200,6 @@ async def get_windows_theme() -> str:
 
 async def copy_to_clipboard(text: str) -> bool:
     """Copy text to Windows clipboard."""
-    if not is_windows():
-        print(f"Clipboard: {text}")
-        return True
-
     try:
         # Escape for PowerShell
         escaped = text.replace("'", "''")
@@ -252,9 +215,6 @@ async def copy_to_clipboard(text: str) -> bool:
 
 async def get_clipboard() -> str:
     """Get clipboard contents."""
-    if not is_windows():
-        return ""
-
     try:
         result = subprocess.run(
             ["powershell", "-NoProfile", "-Command", "Get-Clipboard"],
@@ -268,9 +228,6 @@ async def get_clipboard() -> str:
 
 async def play_sound(sound_type: str = "notification") -> None:
     """Play a system sound for notifications."""
-    if not is_windows():
-        return
-
     sounds = {
         "success": "Asterisk",
         "warning": "Exclamation",
@@ -297,9 +254,6 @@ async def play_sound(sound_type: str = "notification") -> None:
 
 async def is_admin() -> bool:
     """Check if running with administrator privileges."""
-    if not is_windows():
-        return os.getuid() == 0 if hasattr(os, "getuid") else False
-
     try:
         result = subprocess.run(
             [

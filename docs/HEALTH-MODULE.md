@@ -16,17 +16,8 @@ The health module:
 
 ## Enabling the Module
 
-During installation, answer "y" when asked about the health module.
-
-Or edit `~/.watchtower/config`:
-```bash
-HEALTH_MODULE_ENABLED=true
-```
-
-Then reinstall:
-```bash
-cd hybridsystem
-./install.sh
+```powershell
+watchtower config --enable-health
 ```
 
 ---
@@ -43,35 +34,30 @@ Process any biometric data file.
 - Data: `.csv`, `.txt`
 
 **Examples:**
-```bash
+```powershell
 # Wearable screenshots
-watchtower health ~/Downloads/oura-sleep.png
-watchtower health ~/Downloads/whoop-recovery.png
-watchtower health ~/Downloads/apple-watch-hrv.png
+watchtower health C:\Users\YourName\Pictures\oura-sleep.png
+watchtower health %USERPROFILE%\Downloads\whoop-recovery.png
+watchtower health %USERPROFILE%\Downloads\apple-watch-hrv.png
 
 # Lab results
-watchtower health ~/Downloads/bloodwork.pdf
-watchtower health ~/Documents/annual-physical.pdf
+watchtower health C:\Users\YourName\Documents\bloodwork.pdf
+watchtower health %USERPROFILE%\Documents\annual-physical.pdf
 
 # Data exports
-watchtower health ~/Downloads/sleep-data.csv
+watchtower health %USERPROFILE%\Downloads\sleep-data.csv
 ```
 
-### `watchtower coach`
+### `watchtower coach "question"`
 
-Interactive Q&A for evidence-based health guidance.
+Ask health-related questions for evidence-based guidance.
 
-```bash
-watchtower coach
+```powershell
+watchtower coach "Should I do intense exercise today given my HRV?"
+watchtower coach "What does low ferritin mean for energy?"
+watchtower coach "How can I improve my sleep quality?"
+watchtower coach "What supplements might help with recovery?"
 ```
-
-Then ask questions like:
-- "Should I do intense exercise today given my HRV?"
-- "What does low ferritin mean for energy?"
-- "How can I improve my sleep quality?"
-- "What supplements might help with recovery?"
-
-Type `quit` to exit.
 
 ---
 
@@ -80,11 +66,11 @@ Type `quit` to exit.
 All health data is stored locally:
 
 ```
-~/.watchtower/health-log.md
+%APPDATA%\.watchtower\health-log.md
 ```
 
 This file:
-- Is **not synced** to Craft by default
+- Is **not synced** anywhere by default
 - Contains extracted metrics from your files
 - Stays on your machine
 - Can be deleted anytime
@@ -123,9 +109,14 @@ The module is **tool-agnostic** — it reads whatever you give it:
 Your health data stays private:
 
 1. **Local storage only** — Data never leaves your machine
-2. **Not synced to Craft** — Unless you explicitly choose to
+2. **Not synced** — Unless you explicitly choose to
 3. **No cloud processing** — Claude processes files locally via Claude Code
-4. **You control deletion** — `rm ~/.watchtower/health-log.md`
+4. **You control deletion** — Just delete the health-log.md file
+
+To delete health data:
+```powershell
+del %APPDATA%\.watchtower\health-log.md
+```
 
 ---
 
@@ -133,13 +124,13 @@ Your health data stays private:
 
 The health module is **not medical advice**:
 
-- ✅ Extracts and organizes your data
-- ✅ Identifies patterns and trends
-- ✅ Provides evidence-based general guidance
-- ✅ Connects health to work capacity
-- ❌ Does not diagnose conditions
-- ❌ Does not prescribe treatments
-- ❌ Does not replace professional medical care
+- Extracts and organizes your data
+- Identifies patterns and trends
+- Provides evidence-based general guidance
+- Connects health to work capacity
+- Does **NOT** diagnose conditions
+- Does **NOT** prescribe treatments
+- Does **NOT** replace professional medical care
 
 For medical concerns, consult a healthcare provider.
 
@@ -160,22 +151,14 @@ When uncertain, the module will search for current research and note the level o
 
 ## Disabling the Module
 
-To disable without uninstalling:
+To disable:
 
-```bash
-# Edit config
-nano ~/.watchtower/config
-
-# Set to false
-HEALTH_MODULE_ENABLED=false
+```powershell
+watchtower config --disable-health
 ```
 
-To remove completely:
+To remove health data completely:
 
-```bash
-# Remove health scripts
-sudo rm /usr/local/bin/watchtower-scripts/health-*.sh
-
-# Remove health log (optional)
-rm ~/.watchtower/health-log.md
+```powershell
+del %APPDATA%\.watchtower\health-log.md
 ```

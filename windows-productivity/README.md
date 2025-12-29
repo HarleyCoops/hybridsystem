@@ -38,7 +38,7 @@ Built on the Claude Code SDK for Python:
 
 - Python 3.10 or later
 - Claude Code SDK installed and configured
-- Windows 10/11 (or macOS/Linux for cross-platform use)
+- Windows 10/11
 
 ### Install from PyPI
 
@@ -196,21 +196,16 @@ asyncio.run(main())
 
 ## Data Storage
 
-All data is stored locally:
+All data is stored locally in `%APPDATA%\.watchtower\`:
 
 ```
-~/.watchtower/
+%APPDATA%\.watchtower\
 ├── config.json         # Configuration
 ├── tasks.json          # Task database
 ├── daily.json          # Daily entries
 ├── sprint.json         # Sprint tracking
 ├── sessions.json       # Session history
 └── health-log.md       # Health data (if enabled)
-```
-
-On Windows, this is typically:
-```
-%APPDATA%\.watchtower\
 ```
 
 ## Philosophy
@@ -256,6 +251,5 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- Original Mac version: Hybrid Productivity System
 - Powered by: Claude Code SDK by Anthropic
 - Inspired by: Cal Newport's deep work principles, GTD methodology, Stoic philosophy

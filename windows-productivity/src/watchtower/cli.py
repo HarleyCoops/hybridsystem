@@ -6,6 +6,8 @@ Command-line interface for the productivity system.
 
 import asyncio
 import sys
+import shutil
+import winreg
 from typing import Optional
 
 import click
@@ -40,6 +42,10 @@ from watchtower.tools.productivity import (
     tool_get_avoided_tasks,
     tool_record_rest_day,
     tool_get_summary,
+)
+from watchtower.utils.windows import (
+    create_scheduled_task,
+    remove_scheduled_task,
 )
 
 console = Console()
@@ -469,6 +475,83 @@ def cmd_config(
         console.print(json.dumps(get_config().model_dump(), indent=2, default=str))
 
 
+@main.command("schedule", short_help="Configure daily briefing schedule")
+@click.option("--enable", type=str, help="Enable daily briefing at HH:MM (e.g., '08:00')")
+@click.option("--disable", is_flag=True, help="Disable daily briefing schedule")
+def cmd_schedule(enable: Optional[str], disable: bool):
+    """Configure the Windows Task Scheduler for daily briefings."""
+    if enable:
+        # Validate time format
+        try:
+            hours, minutes = map(int, enable.split(":"))
+            if not (0 <= hours <= 23 and 0 <= minutes <= 59):
+                raise ValueError
+        except ValueError:
+            print_error("Invalid time format. Use HH:MM (24-hour style), e.g., '08:00'")
+            sys.exit(1)
+
+        # Get path to executable
+        # If running as script: python -m watchtower
+        # If installed: watchtower
+        exe = sys.executable
+        # We assume the module is installed (or editable) and accessible via 'watchtower' command
+        # Ideally, we find the 'watchtower.exe' in Scripts, but invoking via python -m is safer for dev
+        # However, Task Scheduler needs a specific command.
+        # Let's try to locate the 'watchtower' command if on path.
+        
+        import shutil
+        watchtower_cmd = shutil.which("watchtower")
+        
+        if watchtower_cmd:
+            cmd = f'"{watchtower_cmd}" brief'
+        else:
+            # Fallback for dev environment: run via python module
+            # We need the full path to the module/script
+            # Assuming CWD is root of repo, but task scheduler changes dir.
+            # Safest is to rely on installed package. 
+            print_error("Could not find 'watchtower' command on PATH. Please ensure the package is installed.")
+            console.print("[dim]Tip: pip install -e .[/dim]")
+            sys.exit(1)
+
+        with Progress(
+             SpinnerColumn(),
+             TextColumn("[progress.description]{task.description}"),
+             console=console,
+             transient=True,
+        ) as progress:
+             progress.add_task("Configuring Windows Task Scheduler...", total=None)
+             success = run_async(create_scheduled_task(
+                 name="Watchtower Morning Briefing",
+                 command=cmd,
+                 time=enable,
+                 days=["MON", "TUE", "WED", "THU", "FRI"] # Standard work week default
+             ))
+
+        if success:
+            print_success(f"Daily briefing scheduled for {enable} (Mon-Fri)")
+            console.print("[dim]Task: 'Watchtower Morning Briefing' created in Task Scheduler[/dim]")
+        else:
+            print_error("Failed to create scheduled task.")
+
+    elif disable:
+        with Progress(
+             SpinnerColumn(),
+             TextColumn("[progress.description]{task.description}"),
+             console=console,
+             transient=True,
+        ) as progress:
+             progress.add_task("Removing scheduled task...", total=None)
+             success = run_async(remove_scheduled_task("Watchtower Morning Briefing"))
+
+        if success:
+            print_success("Daily briefing schedule removed")
+        else:
+            print_error("Failed to remove scheduled task (or it didn't exist).")
+    
+    else:
+        click.echo(ctx.get_help())
+
+
 @main.command("help-full", short_help="Show detailed help")
 def cmd_help_full():
     """Show detailed help with examples."""
@@ -540,6 +623,81 @@ def cmd_help_full():
 [dim]For more info: https://github.com/your-repo/watchtower-windows[/dim]
 """
     console.print(help_text)
+
+
+
+@main.command("install-menus", short_help="Install Windows context menus")
+def cmd_install_menus():
+    """Install 'Process as Card' context menu for images."""
+    watchtower_cmd = shutil.which("watchtower")
+    if not watchtower_cmd:
+        print_error("Could not find 'watchtower' command. Is it installed?")
+        print_error("Try: pip install -e .")
+        return
+
+    # Helper to clean path for registry
+    exe_path = f'"{watchtower_cmd}"'
+
+    try:
+        # Create key for Background (Directory) - maybe later
+        # Create key for Images
+        # HKCU\Software\Classes\SystemFileAssociations\image\shell\WatchtowerCard
+        
+        # We use HKCU to avoid admin requirement
+        base_path = r"Software\Classes\SystemFileAssociations\image\shell"
+        
+        # 1. Process Card
+        key_path = f"{base_path}\\WatchtowerCard"
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+            winreg.SetValue(key, "", winreg.REG_SZ, "Process with Watchtower (Card)")
+            winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ, watchtower_cmd) # Use exe icon
+
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, f"{key_path}\\command") as key:
+            winreg.SetValue(key, "", winreg.REG_SZ, f'{exe_path} card "%1"')
+            
+        # 2. Process Journal
+        key_path = f"{base_path}\\WatchtowerJournal"
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, key_path) as key:
+            winreg.SetValue(key, "", winreg.REG_SZ, "Process with Watchtower (Journal)")
+            winreg.SetValueEx(key, "Icon", 0, winreg.REG_SZ, watchtower_cmd)
+
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, f"{key_path}\\command") as key:
+            winreg.SetValue(key, "", winreg.REG_SZ, f'{exe_path} journal -i "%1"')
+
+        print_success("Windows context menus installed!")
+        console.print("[dim]Right-click an image to see 'Process with Watchtower' options.[/dim]")
+        # Notify explorer to refresh? hard to do from python without user logoff, but commonly works immediately for HKCU keys
+        
+    except Exception as e:
+        print_error(f"Failed to install registry keys: {e}")
+
+@main.command("uninstall-menus", short_help="Remove Windows context menus")
+def cmd_uninstall_menus():
+    """Remove Watchtower context menus."""
+    try:
+        base_path = r"Software\Classes\SystemFileAssociations\image\shell"
+        
+        # Helper to delete recursively
+        def delete_key(key, sub_key):
+            try:
+                open_key = winreg.OpenKey(key, sub_key, 0, winreg.KEY_ALL_ACCESS)
+                info = winreg.QueryInfoKey(open_key)
+                for i in range(0, info[0]):
+                    # If it has subkeys, delete them first
+                    sub = winreg.EnumKey(open_key, 0)
+                    delete_key(open_key, sub)
+                winreg.DeleteKey(key, sub_key)
+            except WindowsError:
+                pass
+
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, base_path, 0, winreg.KEY_ALL_ACCESS) as key:
+            delete_key(key, "WatchtowerCard")
+            delete_key(key, "WatchtowerJournal")
+            
+        print_success("Context menus removed.")
+
+    except Exception as e:
+        print_error(f"Error removing keys (they might not exist): {e}")
 
 
 if __name__ == "__main__":

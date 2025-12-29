@@ -1,28 +1,28 @@
 # Hybrid System
 
-A productivity system that bridges pen-and-paper workflow with AI-powered digital intelligence.
+A Windows productivity system that bridges pen-and-paper workflow with AI-powered digital intelligence.
 
-**Morning:** AI generates daily priorities  
-**Day:** Work from a physical card  
+**Morning:** AI generates daily priorities
+**Day:** Work from a physical card
 **Evening:** Photo your card → AI reads handwriting → updates everything automatically
 
-Built with [Craft Docs](https://craft.do), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), and Craft's MCP server.
+Built with [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and the Claude Agent SDK.
 
 ---
 
 ## Quick Start
 
 **Requirements:**
-- macOS
-- [Craft Docs](https://www.craft.do) (free tier works)
+- Windows 10/11
+- Python 3.10 or later
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (requires Claude subscription)
 
 **Install:**
 
 ```bash
 git clone https://github.com/krispuckett/hybridsystem.git
-cd hybridsystem
-./install.sh
+cd hybridsystem/windows-productivity
+pip install -e .
 ```
 
 **Setup takes 10 minutes.** Follow the [Setup Guide](docs/SETUP.md).
@@ -31,21 +31,16 @@ cd hybridsystem
 
 ## How It Works
 
-### Three Connected Documents
+### Physical-Digital Bridge
 
-**The Watchtower** (Daily Hub)
-- Morning briefing with prioritized tasks
-- Field reports for quick captures
-- Links to your task pool
+The system leverages the focus benefits of physical pen-and-paper work combined with AI-powered digital intelligence:
 
-**The Forge** (Task Pool)
-- Organized by energy requirement
-- Deep Work, Standard Tasks, Light Work, Someday
+1. **Morning:** Run `watchtower brief` to get AI-generated priorities
+2. **Write:** Transfer top 3-5 tasks to a physical index card
+3. **Work:** Focus on the card throughout your day
+4. **Evening:** Photograph your card and run `watchtower card photo.jpg`
 
-**The Long Road** (Journey Tracker)
-- Work/rest cycle tracking
-- Pattern recognition over time
-- Insights from reflections
+The AI reads your handwriting, tracks completions, and detects patterns.
 
 ### Daily Workflow
 
@@ -57,51 +52,50 @@ Generates priorities. Write top 3-5 on a physical card.
 
 **Evening (5 min):**
 ```bash
-watchtower card ~/Downloads/card-photo.jpg
+watchtower card ~/Pictures/card-photo.jpg
 ```
 AI reads handwriting, updates tasks automatically.
 
 **Anytime:**
 ```bash
-watchtower add "task description" normal    # Add task
-watchtower energy                           # Check/log energy
-watchtower status                           # Quick overview
+watchtower add "task description" -p standard    # Add task
+watchtower energy high                           # Log energy level
+watchtower status                                # Quick overview
 ```
 
 ---
 
 ## Commands
 
-### Daily Workflow
+### Core Commands
 | Command | Description |
 |---------|-------------|
 | `watchtower brief` | Generate morning priorities |
 | `watchtower card <image>` | Process end-of-day card photo |
-| `watchtower energy` | Check and log energy level |
+| `watchtower energy [level]` | Log/analyze energy level |
+| `watchtower status` | Quick system overview |
 
 ### Task Management
 | Command | Description |
 |---------|-------------|
-| `watchtower add "task" [level]` | Add task (high/normal/low/someday) |
-| `watchtower status` | Quick system overview |
+| `watchtower add "task" -p [level]` | Add task (deep/standard/light/someday) |
+| `watchtower tasks` | List all active tasks |
+| `watchtower avoided` | Show tasks with avoidance patterns |
 
-### Accountability
+### Pattern Analysis
 | Command | Description |
 |---------|-------------|
 | `watchtower accountability` | Deep pattern analysis + coaching |
 | `watchtower weekly` | Weekly intelligence review |
+| `watchtower summary` | Quick data summary |
 
-### Focus
+### Focus & Health (Optional Modules)
 | Command | Description |
 |---------|-------------|
 | `watchtower work "project"` | Start deep work session |
-| `watchtower journal` | Process journal entry |
-
-### Health (Optional Module)
-| Command | Description |
-|---------|-------------|
-| `watchtower health <file>` | Process any biometric data |
-| `watchtower coach` | Evidence-based health Q&A |
+| `watchtower journal [text]` | Process journal entry |
+| `watchtower health <file>` | Process biometric data |
+| `watchtower coach "question"` | Evidence-based health Q&A |
 
 ---
 
@@ -111,9 +105,9 @@ Tasks are categorized by energy requirement:
 
 | Level | Category | When to Do |
 |-------|----------|------------|
-| `high` | Deep Work | Peak energy windows only |
-| `normal` | Standard Work | Productive but not peak |
-| `low` | Light Work | Tired, admin, easy wins |
+| `deep` | Deep Work | Peak energy windows only |
+| `standard` | Standard Work | Productive but not peak |
+| `light` | Light Work | Tired, admin, easy wins |
 | `someday` | Future Ideas | When inspiration strikes |
 
 The system learns your patterns and routes you to appropriate work based on your current energy.
@@ -139,36 +133,62 @@ When patterns warrant it, coaching uses three archetypal voices:
 - **Gandalf** — When showing burnout signals (wise patience)
 - **Aragorn** — When scattered across too many fronts (commander clarity)
 
-These can be customized in `~/.watchtower/config`.
+These can be customized in your configuration.
 
 ---
 
-## Customization
+## Configuration
 
-Edit `~/.watchtower/config` to customize:
+View and modify settings:
 
-- Peak energy windows
-- Sprint warning thresholds
-- Coaching voice names
-- Document names
-- Task categories
+```bash
+watchtower config --show      # View all settings
+watchtower config --path      # Show config file location
+```
+
+Enable optional modules:
+```bash
+watchtower config --enable-health      # Health tracking
+watchtower config --enable-weekly      # Weekly reviews
+watchtower config --enable-deepwork    # Deep work sessions
+```
 
 See [Customization Guide](docs/CUSTOMIZATION.md) for details.
 
 ---
 
-## Optional: Health Module
+## Data Storage
 
-The health module is tool-agnostic and privacy-focused:
+All data is stored locally in `%APPDATA%\.watchtower\`:
 
-- Accepts data from any wearable or lab (Oura, Whoop, Apple Watch, blood work PDFs, etc.)
-- Stores data locally in `~/.watchtower/health-log.md`
-- Not synced to Craft by default
-- Provides evidence-based guidance, not medical advice
+```
+%APPDATA%\.watchtower\
+├── config.json         # Configuration
+├── tasks.json          # Task database
+├── daily.json          # Daily entries
+├── sprint.json         # Sprint tracking
+├── sessions.json       # Session history
+└── health-log.md       # Health data (if enabled)
+```
 
-Enable during installation or edit config:
+Everything runs locally. Your data stays yours.
+
+---
+
+## Windows Integration
+
+### Scheduled Briefings
+
 ```bash
-HEALTH_MODULE_ENABLED=true
+watchtower schedule --enable 08:00    # Daily briefing at 8 AM
+watchtower schedule --disable         # Remove schedule
+```
+
+### Context Menus
+
+```bash
+watchtower install-menus     # Add right-click options for images
+watchtower uninstall-menus   # Remove context menus
 ```
 
 ---
@@ -196,17 +216,6 @@ Built for people who work in energy waves, not steady streams.
 
 ---
 
-## Technical Details
-
-- **Vision AI** reads handwritten text (~90% accuracy on cursive)
-- **Craft MCP** enables direct document updates via Model Context Protocol
-- **Bash scripts** handle automation without complex dependencies
-- **Config file** allows full customization without editing scripts
-
-Everything runs locally. Your data stays yours.
-
----
-
 ## License
 
 MIT — Use freely, modify as needed, share improvements.
@@ -216,8 +225,8 @@ MIT — Use freely, modify as needed, share improvements.
 ## Acknowledgments
 
 Built exploring what's possible with:
-- [Craft's MCP server](https://www.craft.do/imagine/guide/mcp/claude_code)
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+- [Claude Agent SDK](https://docs.anthropic.com/en/docs/agents-and-tools)
 - [Model Context Protocol](https://modelcontextprotocol.io)
 
 ---
@@ -228,6 +237,6 @@ Open an issue or reach out: [@krispuckett](https://twitter.com/krispuckett)
 
 ---
 
-**Cost:** $0 (with existing Claude subscription)  
-**Setup time:** 10 minutes  
+**Cost:** $0 (with existing Claude subscription)
+**Setup time:** 10 minutes
 **Daily overhead:** 10 minutes (5 min morning + 5 min evening)

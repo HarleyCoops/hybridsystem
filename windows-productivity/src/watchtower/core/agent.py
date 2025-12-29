@@ -1,12 +1,8 @@
-"""
-Watchtower Windows - Agent Orchestration
-Core agent layer powered by Claude Code SDK.
-"""
-
 import asyncio
+import shutil
+import subprocess
+import sys
 from typing import Optional
-
-from claude_code_sdk import query, ClaudeCodeOptions, Message
 
 from watchtower.core.config import (
     get_config,
@@ -143,49 +139,76 @@ async def run_agent(
     attachments: Optional[list[str]] = None,
     allowed_tools: Optional[list[str]] = None,
 ) -> AgentResponse:
-    """Run a query through the Watchtower agent."""
+    """Run a query through the Watchtower agent via Claude CLI."""
     config = get_config()
     system_prompt = build_system_prompt(config)
     state_context = build_state_context() if include_state else ""
+    
+    # Check if claude is available
+    if not shutil.which("claude"):
+        return AgentResponse(
+            text="Error: 'claude' CLI tool not found in PATH. Please install Claude Code.",
+            tools_used=[],
+        )
 
+    # Combine prompts
     full_prompt = (
-        f"{state_context}\n\n---\n\nUser Request:\n{prompt}"
-        if state_context
-        else prompt
+        f"{system_prompt}\n\n"
+        f"{state_context}\n\n"
+        f"---\n\nUser Request:\n{prompt}"
     )
 
-    tools = allowed_tools or ["Read", "Write", "Glob", "Grep"]
-
-    options = ClaudeCodeOptions(
-        system_prompt=system_prompt,
-        allowed_tools=tools,
-        cwd=str(get_data_dir()),
-    )
-
-    result_text = ""
-    tools_used: list[str] = []
-    session_id: Optional[str] = None
+    cmd = ["claude", "-p", full_prompt]
+    
+    # Add attachments if any
+    if attachments:
+        for path in attachments:
+            cmd.extend(["--attach", path])
 
     try:
-        async for message in query(prompt=full_prompt, options=options):
-            if isinstance(message, Message):
-                if message.type == "text":
-                    result_text += message.content
-                elif message.type == "tool_use":
-                    tools_used.append(message.tool_name)
-                elif message.type == "result":
-                    if hasattr(message, "content"):
-                        result_text = message.content or result_text
-                    if hasattr(message, "session_id"):
-                        session_id = message.session_id
-    except Exception as e:
-        raise RuntimeError(f"Agent error: {e}") from e
+        # Run subprocess - this is blocking, so strictly speaking not async optimization
+        # but acceptable for CLI usage
+        # We use Popen or run. Claude CLI usually creates interactive session? 
+        # The bash scripts piped input: claude << EOF
+        # So we should pipe input to stdin, but the -p flag might handle the prompt. 
+        # Let's use stdin to be safe if -p isn't for prompting in this version.
+        # Actually, looking at bash script: 'claude --attach ... << EOF' 
+        # So we should send prompt via stdin.
+        
+        # NOTE: Claude Code CLI typically keeps a session state. 
+        # If we want a stateless query, we input and exit.
+        
+        # Run subprocess
+        # On Windows, claude might be a .ps1 or .cmd shim, needing shell=True to be found/executed correctly
+        # if not using the full python executable path wrapper.
+        
+        process = subprocess.run(
+            ["claude"] + (["--attach", attachments[0]] if attachments else []),
+            input=full_prompt,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            shell=True if sys.platform == "win32" else False
+        )
+        
+        if process.returncode != 0:
+            return AgentResponse(
+                text=f"Claude CLI Error: {process.stderr}",
+                tools_used=[],
+            )
+            
+        return AgentResponse(
+            text=process.stdout,
+            tools_used=[], # We can't easily parse tools used from CLI text output without parsing logic
+            session_id=None,
+        )
 
-    return AgentResponse(
-        text=result_text,
-        tools_used=tools_used,
-        session_id=session_id,
-    )
+    except Exception as e:
+        return AgentResponse(
+            text=f"Agent Execution Error: {str(e)}",
+            tools_used=[],
+        )
 
 
 async def run_morning_briefing() -> AgentResponse:

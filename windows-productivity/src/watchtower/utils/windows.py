@@ -5,12 +5,18 @@ Windows integrations for the productivity system.
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
 
+def is_windows() -> bool:
+    """Check if running on Windows."""
+    return sys.platform == "win32"
+
+
 def get_data_directory() -> Path:
-    """Get the Windows data directory (%APPDATA%\.watchtower)."""
+    r"""Get the Windows data directory (%APPDATA%\.watchtower)."""
     base = Path(os.environ.get("APPDATA", Path.home()))
     return base / ".watchtower"
 
